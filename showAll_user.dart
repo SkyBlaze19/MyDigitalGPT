@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:mydigitalgpt/connected.dart';
+import 'package:mydigitalgpt/nav_menu.dart';
 
 class ShowAllUser extends StatefulWidget {
-  
+  String? token;
+  final String username;
+
+  /*
+  @override
+  void initState() {
+    super.initState();
+    username = widget
+        .username; // Ajoutez cette ligne pour récupérer le nom d'utilisateur
+  }
+  */
+  ShowAllUser({required this.username});
 
   @override
   _ShowAllUserState createState() => _ShowAllUserState();
@@ -9,22 +22,43 @@ class ShowAllUser extends StatefulWidget {
 
 class _ShowAllUserState extends State<ShowAllUser> {
   String? token;
+  String? username;
 
   @override
   void initState() {
     super.initState();
+    username = widget.username;
     //token = widget.authToken;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Utilisez la valeur de _token dans votre interface utilisateur
-    // ...
-
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Liste des utilisateurs'),
-          leading: Builder(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text('Liste des utilisateurs'),
+            Spacer(), // Ajoute un espace flexible
+          ],
+        ),
+        leading: Builder(
+          builder: (BuildContext context) {
+            return IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => Connected(
+                            username: username,
+                          )),
+                );
+              },
+            );
+          },
+        ),
+        actions: [
+          Builder(
             builder: (BuildContext context) {
               return IconButton(
                 icon: Icon(Icons.menu),
@@ -34,38 +68,15 @@ class _ShowAllUserState extends State<ShowAllUser> {
               );
             },
           ),
-          /*actions: [
-            Padding(
-              padding: EdgeInsets.only(right: 10.0),
-              child: IconButton(
-                icon: Icon(Icons.logout),
-                onPressed: () {
-                  widget.passwordController!.clear();
-                  setState(() {
-                    _token = null;
-                    authToken = null;
-                    print('On est dans setState');
-                    print('Mon token dans setState (token) = ${_token}');
-                    print('Mon token dans setState (authToken) = ${authToken}');
-                  });
-                  //Navigator.pop(context, true); // Déconnexion
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => LoginPage(
-                        )
-                      ),
-                  );
-                },
-              ),
-            ),
-          ],*/
-        ),
-        body: Center(
-            child: const Text('Liste des users à venir !'),
-        ),
-
-        
-      );
+        ],
+      ),
+      drawer: AppDrawer(
+        currentPage: 'showAllUsers',
+        username: username!,
+      ),
+      body: Center(
+        child: const Text('Liste des utilisateurs'),
+      ),
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mydigitalgpt/create_user.dart' as CreateUserPage;
 import 'package:mydigitalgpt/login.dart';
+import 'package:mydigitalgpt/nav_menu.dart';
 import 'package:mydigitalgpt/showAll_user.dart';
 
 class Connected extends StatefulWidget {
@@ -22,6 +23,9 @@ class _ConnectedState extends State<Connected> {
   LoginPage loginPage = LoginPage();
   String? _token;
 
+  /* A garder pour le moment, était ce utile / utilisé ? 
+  (étant donné que je ne sais pas je garde) 
+
   IconData _utilisateursIcon = Icons.keyboard_arrow_down;
   bool _utilisateursExpanded = false;
 
@@ -33,6 +37,7 @@ class _ConnectedState extends State<Connected> {
 
   IconData _conversationsIcon = Icons.keyboard_arrow_down;
   bool _conversationsExpanded = false;
+*/
 
   @override
   void initState() {
@@ -42,6 +47,7 @@ class _ConnectedState extends State<Connected> {
 
   Widget build(BuildContext context) {
     String? authToken = widget.authToken;
+    String? username = widget.username;
     print('Mon token : ${authToken ?? ''}');
     return Scaffold(
       appBar: AppBar(
@@ -62,7 +68,7 @@ class _ConnectedState extends State<Connected> {
             child: IconButton(
               icon: Icon(Icons.logout),
               onPressed: () {
-                widget.passwordController!.clear();
+                widget.passwordController?.clear();
                 setState(() {
                   _token = null;
                   authToken = null;
@@ -73,198 +79,16 @@ class _ConnectedState extends State<Connected> {
                 //Navigator.pop(context, true); // Déconnexion
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => LoginPage(
-                      )
-                    ),
+                  MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               },
             ),
           ),
         ],
       ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-              child: Center(
-                child: Text(
-                  'Menu',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                  ),
-                ),
-              ),
-            ),
-            //Utilisateurs
-            ExpansionTile(
-              title: Text('Utilisateurs'),
-              trailing: Icon(_utilisateursIcon),
-              onExpansionChanged: (isExpanded) {
-                setState(() {
-                  _utilisateursExpanded = isExpanded;
-                  _utilisateursIcon = isExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down;
-                });
-              },
-              children: [
-                /*ListTile(
-                  title: Text('Créer un utilisateur'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CreateUserPage.CreateUser(authToken: authToken),
-                      ),
-                    );
-                  },
-                ),*/
-                ListTile(
-                  title: Text('Voir les utilisateurs'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => ShowAllUser()
-                        ),
-                    ); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Voir un utilisateur'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-              ],
-            ),
-
-            // Univers
-            ExpansionTile(
-              title: Text('Univers'),
-              trailing: Icon(_universIcon),
-              onExpansionChanged: (isExpanded) {
-                setState(() {
-                  _universExpanded = isExpanded;
-                  _universIcon = isExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down;
-                });
-              },
-              children: [
-                //Personnages
-                ExpansionTile(
-                  title: Text('Personnages'),
-                  trailing: Icon(_personnagesIcon),
-                  onExpansionChanged: (isExpanded) {
-                    setState(() {
-                      _personnagesExpanded = isExpanded;
-                      _personnagesIcon = isExpanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down;
-                    });
-                  },
-                  children: [
-                    ListTile(
-                      title: Text('Créer un personnage'),
-                      onTap: () {
-                        Navigator.pop(context); // Fermer le menu
-                      },
-                    ),
-                    ListTile(
-                      title: Text('Ajouter une description'),
-                      onTap: () {
-                        Navigator.pop(context); // Fermer le menu
-                      },
-                    ),
-                    ListTile(
-                      title: Text('Voir un personnage'),
-                      onTap: () {
-                        Navigator.pop(context); // Fermer le menu
-                      },
-                    ),
-                    ListTile(
-                      title: Text('Voir tous les personnages d\'un univers'),
-                      onTap: () {
-                        Navigator.pop(context); // Fermer le menu
-                      },
-                    ),
-                  ],
-                ),
-                //Fin personnages
-
-                ListTile(
-                  title: Text('Créer un univers'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Renommer un univers'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Voir un univers'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Voir tous les univers'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-              ],
-            ),
-
-            ExpansionTile(
-              title: Text('Conversations'),
-              trailing: Icon(_personnagesIcon),
-              onExpansionChanged: (isExpanded) {
-                setState(() {
-                  _conversationsExpanded = isExpanded;
-                  _conversationsIcon = isExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down;
-                });
-              },
-              children: [
-                ListTile(
-                  title: Text('Voir toutes les conversations'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Voir une conversation'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Créer une nouvelle conversation'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-                ListTile(
-                  title: Text('Supprimer une conversation'),
-                  onTap: () {
-                    Navigator.pop(context); // Fermer le menu
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
+      drawer: AppDrawer(
+        currentPage: 'connected',
+        username: widget.username ?? '',
       ),
       body: Container(
         color: Colors.blueGrey,

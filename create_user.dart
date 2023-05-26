@@ -121,7 +121,17 @@ class _CreateUserState extends State<CreateUser> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Form(
+
+        /*Idée 1
+         Créer un fichier pour mon form uniquement et juste faire un appel ici dès que possible 
+
+        Idée 1 ++
+         (voir même pour faire en sorte que ce soit un form réutilisable)
+         Comme j'ai pu faire avec mon menu, qu'il affiche des champs en fonction de la page et qu'il post des infos en fonctions de la page aussi
+         A réfléchir
+        */
+
+        child: Form( 
           key: _formKey,
           child: Column(
             children: [
