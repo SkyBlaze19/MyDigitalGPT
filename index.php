@@ -28,10 +28,10 @@ $headers = array();
 
 // Remplissage des headers
 foreach ($headers_tmp as $key => $value){
-    $headers[$key] = $value;
     // Ajout des headers en minuscules
     $headers[strtolower($key)] = $value;
 }
+//print_r($headers);
 
 // URL requested
 $url = isset($_GET['url']) && $_GET['url'] != "" ? $_GET['url'] : null;
@@ -74,9 +74,11 @@ switch($argv[0]){
         //checkLogin($data['username']);
         break;
     case 'createUser':
-
+        processUsers($request_method, $data, $headers, $argv);
         break;
-    
+    case 'updateUser':
+        processUsers($request_method, $data, $headers, $argv);
+        break;
     
     
     //.....
@@ -96,11 +98,11 @@ function processUsers($method, $data, $headers, $argv){
         break;
 
         case 'POST':
-            postNewUser();
+            postNewUser($data);
         break;
         
         case 'PUT':
-            updateUser($argv[1]);
+            updateUser($argv[1]/*, $headers['']*/);
         break;
 
         case 'DELETE':
@@ -115,7 +117,7 @@ function getOneUser($id) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = "SELECT * FROM users WHERE id='".$id."' LIMIT 1";
+    $query = "SELECT username, firstname, lastname, created_at, updated_at FROM users WHERE id='".$id."' LIMIT 1";
     
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
@@ -130,7 +132,7 @@ function getAllUsers() {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = 'SELECT * FROM users';
+    $query = 'SELECT username, firstname, lastname, created_at, updated_at FROM users';
 
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
@@ -138,35 +140,53 @@ function getAllUsers() {
 
     // Récupération des données
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    //echo $users[0];
+    /*
+    for($i = 0; $i < count($users); $i++)
+        echo implode(", ", $users[$i]) . "\n";
+    */
     return json_encode($users);
 }
 
-function postNewUser() {
+function postNewUser($data) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
     
-    
-    /*
+    $query = "INSERT INTO users (username, `password`, email, firstname, lastname, created_at, updated_at)
+    VALUES (:user, :pass, :mail, :Fname, :Lname, :CreateDate, :UpdateDate)";
 
-        // Préparation de la requête SQL
-            echo $query = "INSERT INTO users (username, `password`, mail, registrationDate)
-                VALUES (:username, :pass, :mail, :registrationDate)";
-                
-            // Récupération des données depuis le payload
-            echo $user = $payload['username'];
-            echo $password = $payload['password'];
-            echo $mail = $payload['mail'];
-            echo $registrationDate = $payload['registrationDate'];
-            
-            // Exécution de la requête SQL
-            $stmt = $conn->prepare($query);
-            $stmt->bindParam(':user', $user);
-            $stmt->bindParam(':pass', $password);
-            $stmt->bindParam(':mail', $mail);
-            $stmt->bindParam(':registrationDate', $registrationDate);
-            $stmt->execute();
-            
+    $stmt = $conn->prepare($query);
+
+    //Créa de la date actuelle pour insertion en bdd
+    $currentDate = date('Y-m-d H:i:s');
+
+
+    $stmt->bindParam(':user', $data['username']);
+    $stmt->bindParam(':pass', $data['password']);
+    $stmt->bindParam(':mail', $data['email']);
+    $stmt->bindParam(':Fname', $data['firstname']);
+    $stmt->bindParam(':Lname', $data['lastname']);
+    $stmt->bindParam(':CreateDate', $currentDate);
+    $stmt->bindParam(':UpdateDate', $currentDate);
+
+
+    //Faire un test pour voir si le username est déjà existant, si c'est le cas -> message d'erreur
+    //$userExist = check_if_user_already_exist($data['username']) ? $stmt->execute() : "L'utilisateur ".$data['username']." existe déjà.";
+    $userExist = check_if_user_already_exist($data['username']);
+
+    if($userExist) {
+        echo "L'utilisateur ".$data['username']." existe déjà.";
+        exit;
+    }
+    else 
+        $stmt->execute();
+    
+    
+    // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
+    $response = array('status' => 'success', 'message' => 'Le message a été inséré avec succès dans la base de données');
+    echo json_encode($response);
+    exit;
+
+        /*
             // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
             $response = array('status' => 'success', 'message' => 'Le message a été inséré avec succès dans la base de données');
             echo json_encode($response);
@@ -192,9 +212,44 @@ function deleteUser($id) {
 // handle = gerer (gestion des users / GET)
 function handle_GET_users($argv) {
     if ( isset($argv[1]) && $argv[1] != '' && is_numeric($argv[1]) )
-        getOneUser($argv[1]);
+        echo $monUser = getOneUser($argv[1]);
     else
-        getAllUsers();
+        echo $mesUsers = getAllUsers();
+        /*$mesUsers = getAllUsers();
+        echo $mesUsers;
+        */
+}
+
+function check_if_user_already_exist($username){
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT username FROM users WHERE username = :username";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':username', $username);
+    $stmt->execute();
+
+    $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+    if ($user) {
+        // Un utilisateur a été trouvé
+        // Faites quelque chose avec les données de l'utilisateur
+        return true;
+        // Faites ce que vous devez faire avec l'utilisateur trouvé
+    } else {
+        // Aucun utilisateur trouvé avec ce nom d'utilisateur
+        // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+        return false;
+    }
+
+}
+
+// Cause une erreur // Je ne sais pas pourquoi // A utiliser si possible 
+function connexionBDD() {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    return $conn;
 }
 
 exit;
