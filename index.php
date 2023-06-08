@@ -89,12 +89,6 @@ function processUsers($method, $data, $headers, $argv){
     switch ($method){
         case 'GET':
             handle_GET_users($argv);
-            /*
-            if($argv[1] != '')
-                getOneUser($argv[1]);
-            else
-                getAllUsers();
-            */
         break;
 
         case 'POST':
@@ -171,10 +165,20 @@ function postNewUser($data) {
 
     //Faire un test pour voir si le username est déjà existant, si c'est le cas -> message d'erreur
     //$userExist = check_if_user_already_exist($data['username']) ? $stmt->execute() : "L'utilisateur ".$data['username']." existe déjà.";
-    $userExist = check_if_user_already_exist($data['username']);
+    $userExist = check_if_user_doublon($data['username'], $data['email']);
 
-    if($userExist) {
+    if($userExist == 1) {
+        echo "L'utilisateur ".$data['username']." existe déjà et l'email ".$data['email']." est déjà prise aussi !";
+        exit;
+    }
+    else if($userExist == 2)
+    {
         echo "L'utilisateur ".$data['username']." existe déjà.";
+        exit;
+    }
+    else if($userExist == 3)
+    {
+        echo "L'email ".$data['email']." est déjà prise.";
         exit;
     }
     else 
@@ -220,6 +224,53 @@ function handle_GET_users($argv) {
         */
 }
 
+// Fonction qui sert à controler mon post 
+function check_if_user_doublon($username, $mail){
+    if (check_if_mail_already_used($mail) && check_if_user_already_exist($username)) 
+    {
+        // User déjà utilisé
+        // Email déjà utilisé
+        return 1;
+    } else if (check_if_user_already_exist($username))
+    {
+        // User déjà utilisé
+       return 2;
+    }  else if (check_if_mail_already_used($mail))
+    {    
+        // Email déjà utilisé
+        return 3;
+    }
+    else
+    {
+        // Pas de doublons
+        return false;    
+    }
+}
+
+function check_if_mail_already_used($email){
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT email FROM users WHERE email = :email";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':email', $email);
+    $stmt->execute();
+
+    $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+    if ($user) {
+        // Un user possède cet email
+        // Faites quelque chose avec les données de l'utilisateur
+        return true;
+        // Faites ce que vous devez faire avec l'utilisateur trouvé
+    } else {
+        // Aucun utilisateur trouvé avec cet email
+        // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+        return false;
+    }
+}
+
+
 function check_if_user_already_exist($username){
     $database = Database::getInstance();
     $conn = $database->getConnection();
@@ -232,17 +283,17 @@ function check_if_user_already_exist($username){
     $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
 
     if ($user) {
-        // Un utilisateur a été trouvé
+        // Un user possède cet email
         // Faites quelque chose avec les données de l'utilisateur
         return true;
         // Faites ce que vous devez faire avec l'utilisateur trouvé
     } else {
-        // Aucun utilisateur trouvé avec ce nom d'utilisateur
+        // Aucun utilisateur trouvé avec cet email
         // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
         return false;
     }
-
 }
+
 
 // Cause une erreur // Je ne sais pas pourquoi // A utiliser si possible 
 function connexionBDD() {
