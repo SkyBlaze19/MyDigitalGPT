@@ -49,6 +49,14 @@
                 );
                 return $userObj;
             } else {
+                if(UserModel::username_is_valid($username) === false)
+                {
+                    echo "Cet utilisateur est inexistant !";
+                }
+                else if(UserModel::password_is_valid($user['username'], $password) === false)
+                {
+                    echo "Mot de passe invalide !";
+                }
                 // Les informations d'identification sont incorrectes
                 return false;
             }
@@ -191,5 +199,57 @@
         {
             $this->updated_at = DateTime::createFromFormat('Y-m-d H:i:s', $updated_at);
             return $this;
+        }
+
+        public static function password_is_valid($username, $password){
+            //$conn = connexionBDD();
+            //Debug
+            //echo 'Tu est dans password validate';
+        
+            $database = Database::getInstance();
+            $conn = $database->getConnection();
+        
+            $query = "SELECT username, `password` FROM users WHERE username = :username";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':username', $username);
+        
+            $stmt->execute();
+        
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+            //echo "User password = ".$user['password']." / alors que password = ".$password." !";
+
+            if($user['password'] != $password)
+            {
+                //echo 'Passwd différent !';
+                return false;
+            }
+            else 
+            {
+                //echo 'theoriquement passws ok ';
+                return true;
+            }
+        }
+        
+        public static function username_is_valid($username){
+            //$conn = connexionBDD();
+        
+            $database = Database::getInstance();
+            $conn = $database->getConnection();
+        
+            $query = "SELECT username FROM users WHERE username = :username";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':username', $username);
+        
+            $stmt->execute();
+        
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+            //print_r($user);
+        
+            if(empty($user)) 
+                return false;
+            else 
+                return true;
         }
     }
