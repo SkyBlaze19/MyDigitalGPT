@@ -32,9 +32,30 @@ class Authentication {
         return $token;
     }
 
+    public function decodeToken($token)
+    {
+        $decodedToken = 'AAA';
+        //print_r("Avant décodage :".$token."\n\n");
+        try {
+            // Validation du token et décryptage
+            $decodedToken = JWT::decode($token, $this->secretKey, 'HS256');
+            print_r($decodedToken);
+            return $decodedToken;
+            // Le token est valide
+        } catch (Exception $e) {
+            // Le token est invalide ou a expiré, vous pouvez renvoyer une réponse d'erreur ou non autorisée
+            print_r($decodedToken);
+            echo "Token invalide !";
+            return null;
+        }
+    }
     
 
     /*
+    $decoded = JWT::decode($jwt, new Key($key, 'HS256'));
+
+    print_r($decoded);
+
 
     // We generate the token with an expiration date of 12 hour
         $token = \Firebase\JWT\JWT::encode(
