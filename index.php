@@ -73,12 +73,6 @@ switch($argv[0]){
         processLoginRequest($request_method, $data, $headers, $argv);
         //checkLogin($data['username']);
         break;
-    case 'createUser':
-        processUsers($request_method, $data, $headers, $argv);
-        break;
-    case 'updateUser':
-        processUsers($request_method, $data, $headers, $argv);
-        break;
     
     
     //.....
@@ -96,7 +90,7 @@ function processUsers($method, $data, $headers, $argv){
         break;
         
         case 'PUT':
-            updateUser($argv[1]/*, $headers['']*/);
+            updateUser($argv[1], $data, $headers);
         break;
 
         case 'DELETE':
@@ -201,11 +195,54 @@ function postNewUser($data) {
     
 }
 
-function updateUser($id) {
+function updateUser($id, $data, $headers) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
-    $query = '';
+    $auth = new Authentication();
+
+    $query = "UPDATE users SET username = :user, `password` = :pass, email = :mail, firstname = :Fname, lastname = :Lname, updated_at = :UpdateDate 
+    WHERE id = :id";
+
+    $stmt = $conn->prepare($query);
+
+    //Créa de la date actuelle pour insertion en bdd
+    $updateDate = date('Y-m-d H:i:s');
+
+    $stmt->bindParam(':user', $data['username']);
+    $stmt->bindParam(':pass', $data['password']);
+    $stmt->bindParam(':mail', $data['email']);
+    $stmt->bindParam(':Fname', $data['firstname']);
+    $stmt->bindParam(':Lname', $data['lastname']);
+    $stmt->bindParam(':UpdateDate', $updateDate);
+    $stmt->bindParam(':id', $id);
+
+
+    $token = $headers['authorization'];
+    $userToken = $auth->decodeToken($token);
+    $userToken = json_decode($userToken->data, true);
+    
+    if($userToken->data['id'] === $id)  
+        $stmt->execute();
+    else {
+        echo "Vous n'avez pas la permission de modifier cet utilisateur";
+        exit;
+    }
+
+
 }
+
+/*
+$decodedToken = $userToken->decodeToken($token);
+$userData = json_decode($decodedToken->data, true);
+$username = $userData['username'];
+$password = $userData['password'];
+$firstname = $userData['firstname'];
+$lastname = $userData['lastname'];
+$createdAt = $userData['created_at'];
+$updatedAt = $userData['updated_at'];
+
+
+*/
 
 function deleteUser($id) {
     $database = Database::getInstance();
@@ -294,6 +331,37 @@ function check_if_user_already_exist($username){
     }
 }
 
+/* Utile si on utilise PATCH
+function handle_UPDATE_query($query, $data, $id){
+    $setStatements = array();
+    foreach ($data as $field => $value) {
+    // Vérifiez si le champ doit être exclu ou s'il n'y a pas de nouvelle valeur fournie
+    if ($field === 'created_at' || $value === null) {
+        continue; // Passe à la prochaine itération de la boucle
+    }
+
+    // Ajoute le fragment de mise à jour pour ce champ
+    $setStatements[] = $field . " = '" . $value . "'";
+}
+
+// Vérifiez si au moins un champ doit être mis à jour
+if (count($setStatements) > 0) {
+    // Ajoute les fragments de mise à jour à la requête
+    $query .= ' ' . implode(', ', $setStatements);
+
+    // Ajoutez la condition pour identifier la ligne à mettre à jour, par exemple :
+    $query .= ' WHERE id = '.$id;
+
+    // Exécutez la requête SQL ici
+    // ...
+} else {
+    // Aucun champ à mettre à jour, vous pouvez gérer cette situation en conséquence
+    // ...
+}
+
+}
+
+*/
 
 // Cause une erreur // Je ne sais pas pourquoi // A utiliser si possible 
 function connexionBDD() {
