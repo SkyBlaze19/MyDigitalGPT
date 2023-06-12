@@ -434,7 +434,7 @@ function postNewUniverse($data, $headers) {
 
     $auth = new Authentication();
     
-    $query = "INSERT INTO universe (`name`, creator_id, created_at, updated_at)
+    $query = "INSERT INTO universes (`name`, creator_id, created_at, updated_at)
     VALUES (:name, :creatorId, :CreateDate, :UpdateDate)";
 
     $stmt = $conn->prepare($query);
@@ -448,7 +448,7 @@ function postNewUniverse($data, $headers) {
     $userToken = $auth->decodeToken($token[1]);
     $userToken = json_decode($userToken->data, true);
 
-    $stmt->bindParam(':user', $data['name']);
+    $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':creatorId', $userToken['id']);
     $stmt->bindParam(':CreateDate', $currentDate);
     $stmt->bindParam(':UpdateDate', $currentDate);
@@ -466,7 +466,7 @@ function postNewUniverse($data, $headers) {
     
     
     // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
-    $response = array('status' => 'success', 'message' => 'L\'utilisateur a été inséré avec succès dans la base de données');
+    $response = array('status' => 'success', 'message' => 'L\'univers a été inséré avec succès dans la base de données');
     echo json_encode($response); 
 }
 
