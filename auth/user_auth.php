@@ -1,6 +1,7 @@
 <?php
 
 use \Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class Authentication {
     private $secretKey;
@@ -34,17 +35,24 @@ class Authentication {
 
     public function decodeToken($token)
     {
-        $decodedToken = 'AAA';
+        /*$key = __JWT_SECRET_KEY__;
+        $testKey = new Key(__JWT_SECRET_KEY__, 'HS256');
+        var_dump($testKey);*/
+
+        //print_r("\n\n".__JWT_SECRET_KEY__."\n\n");
+        $decodedToken = '';
         //print_r("Avant décodage :".$token."\n\n");
         try {
             // Validation du token et décryptage
-            $decodedToken = JWT::decode($token, $this->secretKey, 'HS256');
-            print_r($decodedToken);
+            $decodedToken = JWT::decode($token, new Key(__JWT_SECRET_KEY__, 'HS256'));
+            //var_dump($decodedToken);
+           // print_r("\n\nDecoded token dans la fonction decoded token : ".$decodedToken."\n\n");
             return $decodedToken;
             // Le token est valide
         } catch (Exception $e) {
             // Le token est invalide ou a expiré, vous pouvez renvoyer une réponse d'erreur ou non autorisée
-            print_r($decodedToken);
+            //var_dump($decodedToken);
+            //print_r("\n\nDecoded token dans la fonction decoded token : ".$decodedToken."\n\n");
             echo "Token invalide !";
             return null;
         }
