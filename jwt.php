@@ -4,28 +4,43 @@ include('vendor/autoload.php');
 
 // Requires: composer require firebase/php-jwt
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
-// Get your service account's email address and private key from the JSON key file
-$service_account_email = "abc-123@a-b-c-123.iam.gserviceaccount.com";
-$private_key = "-----BEGIN PRIVATE KEY-----...";
+$key = 'example_key';
+$payload = [
+    'iss' => 'http://example.org',
+    'aud' => 'http://example.com',
+    'iat' => 1356999524,
+    'nbf' => 1357000000
+];
 
-function create_custom_token($uid, $is_premium_account) {
-  global $service_account_email, $private_key;
+/**
+ * IMPORTANT:
+ * You must specify supported algorithms for your application. See
+ * https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40
+ * for a list of spec-compliant algorithms.
+ */
+$jwt = JWT::encode($payload, $key, 'HS256');
+$decoded = JWT::decode($jwt, new Key($key, 'HS256'));
 
-  $now_seconds = time();
-  $payload = array(
-    "iss" => $service_account_email,
-    "sub" => $service_account_email,
-    "aud" => "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
-    "iat" => $now_seconds,
-    "exp" => $now_seconds+(60*60),  // Maximum expiration time is one hour
-    "uid" => $uid,
-    "claims" => array(
-      "premium_account" => $is_premium_account
-    )
-  );
-  return JWT::encode($payload, $private_key, "RS256");
-}
+print_r($decoded);
+
+/*
+ NOTE: This will now be an object instead of an associative array. To get
+ an associative array, you will need to cast it as such:
+*/
+
+$decoded_array = (array) $decoded;
+
+/**
+ * You can add a leeway to account for when there is a clock skew times between
+ * the signing and verifying servers. It is recommended that this leeway should
+ * not be bigger than a few minutes.
+ *
+ * Source: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html#nbfDef
+ */
+JWT::$leeway = 60; // $leeway in seconds
+$decoded = JWT::decode($jwt, new Key($key, 'HS256'));
 
 
 /*
@@ -39,4 +54,6 @@ function create_custom_token($uid, $is_premium_account) {
         __JWT_SECRET_KEY__,
         'HS256'
     );
+
+    */
 
