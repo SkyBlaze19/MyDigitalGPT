@@ -94,7 +94,7 @@ function processUsers($method, $data, $headers, $argv){
         break;
 
         case 'DELETE':
-            deleteUser($argv[1]);
+            deleteUser($argv[1], $headers);
         break;
 
     }
@@ -180,7 +180,7 @@ function postNewUser($data) {
     
     
     // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
-    $response = array('status' => 'success', 'message' => 'Le message a été inséré avec succès dans la base de données');
+    $response = array('status' => 'success', 'message' => 'L\'utilisateur a été inséré avec succès dans la base de données');
     echo json_encode($response);
     exit;
 
@@ -198,6 +198,7 @@ function postNewUser($data) {
 function updateUser($id, $data, $headers) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
+
     $auth = new Authentication();
 
     $query = "UPDATE users SET username = :user, `password` = :pass, email = :mail, firstname = :Fname, lastname = :Lname, updated_at = :UpdateDate 
@@ -218,36 +219,64 @@ function updateUser($id, $data, $headers) {
 
 
     $token = $headers['authorization'];
-    $userToken = $auth->decodeToken($token);
+    $token = explode(" ", $token);
+    //var_dump($token);
+
+    //echo "\n\nrecup token ? :".$token."\n\n";
+    $userToken = $auth->decodeToken($token[1]);
+    //print_r("\n\nToken null ? : ".var_dump($userToken)."\n\n");
     $userToken = json_decode($userToken->data, true);
-    
-    if($userToken->data['id'] === $id)  
+    //print_r("\n\nUser Token = : ".var_dump($userToken)."\n\n");
+    //var_dump($userToken);
+
+    //echo "\n\n Id : ".$id."\n\n";
+    //echo $userToken['id']."\n\n";
+
+    if($userToken['id'] == $id)  
+    {
         $stmt->execute();
+        echo "Utilisateur mis à jour !";
+    }
     else {
         echo "Vous n'avez pas la permission de modifier cet utilisateur";
         exit;
     }
-
-
 }
 
-/*
-$decodedToken = $userToken->decodeToken($token);
-$userData = json_decode($decodedToken->data, true);
-$username = $userData['username'];
-$password = $userData['password'];
-$firstname = $userData['firstname'];
-$lastname = $userData['lastname'];
-$createdAt = $userData['created_at'];
-$updatedAt = $userData['updated_at'];
-
-
-*/
-
-function deleteUser($id) {
+function deleteUser($id, $headers) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
-    $query = '';
+
+    $auth = new Authentication();
+
+
+    $query = "DELETE FROM users WHERE id = :id";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':id', $id);
+
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    if(check_if_user_already_exist($userToken['username']) === false)
+    {
+        echo "L'utilisateur que vous souhaitez supprimer n'existe pas !";
+        exit;
+    }
+
+    if($userToken['id'] == $id)  
+    {
+        $stmt->execute();
+        echo "Utilisateur supprimé avec succès !";
+    }
+    else {
+        echo "Vous n'avez pas la permission de supprimer cet utilisateur";
+        exit;
+    }
 }
 
 // handle = gerer (gestion des users / GET)
@@ -386,120 +415,3 @@ exit;
 
 
 
-
-
-
-include('controllers/controller.user.php');
-include('models/ConnexionBdd.php');
-    const SEPARATEUR_ENDPOINT = '/';
-    // Récupere juste le endpoint 
-    //(si en local ignore le dossier parent)
-    $endpoint = $_GET['url'];
-    
-        $headers = getallheaders();
-        $method = $_SERVER['REQUEST_METHOD'];
-        $payload = json_decode(file_get_contents('php://input'),true);
-
-    
-    // Gérer les routes en comparant l'endpoint en fonction de son contenu 
-    // Puis le diriger vers son controlleur 
-    // Faire un singleton pour connecter les controlleurs à la bdd 
-    // users/2
-    
-    // Sépare l'endpoint afin d'identifier ou l'on est 
-    $urlExploded = explode(SEPARATEUR_ENDPOINT,$endpoint);
-
-    switch($urlExploded[0]){
-        case 'users':
-            //echo "Vous êtes sur la partie utilisateur"; 
-            // Ci-dessous urlExploded = mon endpoint;
-            processUsersRequests($headers, $method, $urlExploded, $payload);
-            break;
-        case 'message':
-            echo "Vous êtes sur la partie message";
-            break;
-        default;
-            echo "Bonjour !";
-            break;
-    }
-
-    exit;
-
-    //print_r($_GET);
-
-    if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') 
-        $monUrl = "https"; 
-    else
-        $monUrl = "http";   
-    
-    // Ajoutez // à l'URL.
-    $monUrl .= "://"; 
-    
-    // Ajoutez l'hôte (nom de domaine, ip) à l'URL.
-    $monUrl .= $_SERVER['HTTP_HOST']; 
-    
-    // Ajouter l'emplacement de la ressource demandée à l'URL
-    $monUrl .= $_SERVER['REQUEST_URI']; 
-      
-    // Afficher l'URL
-    //echo $monUrl; 
-
-    echo("Hello World"); echo("<br/>");echo("<br/>");
-
-    // Sert à envoyer une requete http avec les headers or je dois les récuperer
-    //print_r(get_headers($monUrl)); echo("<br/>");
-    //print_r(get_headers($monUrl, true));
-
-    echo "Headers de la requête : \n";
-    print_r($headers);
-    echo("<br/>");echo("<br/>");
-    echo "Méthode utilisée : $method"."<br/><br/>";
-
-    echo "L'url est : $monUrl"."<br/><br/>"; 
-
-    // Vérifie que la méthode de la requête est POST
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // Récupérez le corps de la requête
-        $body = file_get_contents('php://input');
-    
-        $array = json_decode($body, true);
-        // Affichez le corps de la requête
-        echo strrev($array["message"]);
-        echo "\n".$array["message"];
-    }
-    else if ($_SERVER['REQUEST_METHOD'] === 'GET')
-    {
-        // Récupérez le corps de la requête GET
-        $body = $_GET['message'];
-
-        $array = json_decode($body, true);
-        // Affichez le corps de la requête
-        echo strrev($array["message"]);
-        echo "\n".$array["message"];
-    }
-
-    echo "<br><br>".$endpoint;
-
-    if($endpoint == "/Api/users")
-    {
-        echo("<br><br>"."Vous êtes sur la partie authentification utilisateur.");
-    }
-
-
-/*
-?>
-
-<!--
-<!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TP API REST</title>
-    </head>
-    <body>
-        
-    </body>
-</html>
--->*/

@@ -3,6 +3,7 @@
 
     class UserModel {
 
+        private int $id;
         private string $username;
         private string $password;
         private string $firstname;
@@ -10,8 +11,9 @@
         private DateTime $created_at; //trasnformer en datetime
         private DateTime $updated_at;
 
-        public function __construct($username, $password, $firstname, $lastname, $created_at, $updated_at)
+        public function __construct($id, $username, $password, $firstname, $lastname, $created_at, $updated_at)
         {
+            $this->setId($id);
             $this->setUsername($username);
             $this->setPassword($password);
             $this->setFirstname($firstname);
@@ -40,6 +42,7 @@
                 // Les informations d'identification sont valides
                 //print_r($user);
                 $userObj = new UserModel(
+                    $user['id'],
                     $user['username'], 
                     $user['password'],
                     $user['firstname'],
@@ -66,6 +69,7 @@
         {
             $monTab = array();
 
+            $monTab['id'] = $this->id;
             $monTab['username'] = $this->username;
             $monTab['password'] = $this->password;
             $monTab['firstname'] = $this->firstname;
@@ -79,9 +83,29 @@
             return $monTab;
             //return array
         }
-
-
+        
+        
         /*Getter(s) / Setter(s) */
+
+        /**
+         * Get the value of id
+         */ 
+        public function getId()
+        {
+                return $this->id;
+        }
+
+        /**
+         * Set the value of id
+         *
+         * @return  self
+         */ 
+        public function setId($id)
+        {
+                $this->id = $id;
+
+                return $this;
+        }
 
         /**
          * Get the value of username
@@ -252,4 +276,5 @@
             else 
                 return true;
         }
+
     }
