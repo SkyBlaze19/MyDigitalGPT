@@ -73,6 +73,9 @@ switch($argv[0]){
         processLoginRequest($request_method, $data, $headers, $argv);
         //checkLogin($data['username']);
         break;
+    case 'universes':
+        processUniverses($request_method, $data, $headers, $argv);
+        break;
     
     
     //.....
@@ -359,6 +362,137 @@ function check_if_user_already_exist($username){
         return false;
     }
 }
+
+function processUniverses($method, $data, $headers, $argv) {
+    switch ($method){
+        case 'GET':
+            handle_GET_universes($argv);
+        break;
+
+        case 'POST':
+            postNewUniverse($data, $headers);
+        break;
+        
+        case 'PUT':
+            updateUniverse($argv[1], $data, $headers);
+        break;
+
+        case 'DELETE':
+            deleteUniverse($argv[1], $headers);
+        break;
+
+    }
+}
+
+function handle_GET_universes($argv) {
+    if ( isset($argv[1]) && $argv[1] != '' && is_numeric($argv[1]) )
+        echo $monUnivers = getOneUniverse($argv[1]);
+    else
+        echo $mesUnivers = getAllUniverses();
+        /*$mesUsers = getAllUsers();
+        echo $mesUsers;
+        */
+}
+
+function getOneUniverse($id) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT `name`, creator_id, , created_at, updated_at FROM universes WHERE id='".$id."' LIMIT 1";
+    
+    // Exécution de la requête SQL
+    $stmt = $conn->prepare($query);
+    $stmt->execute();
+
+    // Récupération des données
+    $universe = $stmt->fetch(PDO::FETCH_ASSOC);
+    return json_encode($universe);
+}
+
+function getAllUniverses() {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = 'SELECT `name`, creator_id, , created_at, updated_at FROM universes';
+
+    // Exécution de la requête SQL
+    $stmt = $conn->prepare($query);
+    $stmt->execute();
+
+    // Récupération des données
+    $universes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    /*
+    for($i = 0; $i < count($users); $i++)
+        echo implode(", ", $users[$i]) . "\n";
+    */
+    return json_encode($universes);
+}
+
+function postNewUniverse($data, $headers) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+    
+    $query = "INSERT INTO universe (`name`, creator_id, created_at, updated_at)
+    VALUES (:name, :creatorId, :CreateDate, :UpdateDate)";
+
+    $stmt = $conn->prepare($query);
+
+    //Créa de la date actuelle pour insertion en bdd
+    $currentDate = date('Y-m-d H:i:s');
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    $stmt->bindParam(':user', $data['name']);
+    $stmt->bindParam(':creatorId', $userToken['id']);
+    $stmt->bindParam(':CreateDate', $currentDate);
+    $stmt->bindParam(':UpdateDate', $currentDate);
+
+
+    //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
+    $universeExist = check_if_universe_doublon($data['name']);
+
+    if($universeExist) {
+        echo "L'univers ".$data['name']." existe déjà !";
+        exit;
+    }
+    else 
+        $stmt->execute();
+    
+    
+    // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
+    $response = array('status' => 'success', 'message' => 'L\'utilisateur a été inséré avec succès dans la base de données');
+    echo json_encode($response); 
+}
+
+function check_if_universe_doublon($name){
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT `name` FROM universes WHERE `name` = :name";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':name', $name);
+    $stmt->execute();
+
+    $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+    if ($user) {
+        // Un univers possède ce nom
+        // Faites quelque chose avec les données de l'utilisateur
+        return true;
+        // Faites ce que vous devez faire avec l'utilisateur trouvé
+    } else {
+        // Aucun univers avec ce nom
+        // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+        return false;
+    }
+}
+
 
 /* Utile si on utilise PATCH
 function handle_UPDATE_query($query, $data, $id){
