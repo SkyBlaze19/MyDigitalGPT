@@ -498,11 +498,8 @@ function updateUniverse($id, $data, $headers) {
     $conn = $database->getConnection();
 
     $auth = new Authentication();
-
-    $query = "UPDATE users SET username = :user, `password` = :pass, email = :mail, firstname = :Fname, lastname = :Lname, updated_at = :UpdateDate 
-    WHERE id = :id";
     
-    $query = "UPDATE universes SET `name` = :name, creatorId = :creatorId, updated_at = :UpdateDate WHERE id = :id";
+    $query = "UPDATE universes SET `name` = :name, updated_at = :UpdateDate WHERE id = :id";
 
     $stmt = $conn->prepare($query);
 
@@ -516,13 +513,18 @@ function updateUniverse($id, $data, $headers) {
     $userToken = json_decode($userToken->data, true);
 
     $stmt->bindParam(':name', $data['name']);
-    $stmt->bindParam(':creatorId', $userToken['id']);
     $stmt->bindParam(':UpdateDate', $updateDate);
     $stmt->bindParam(':id', $id);
 
 
     //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
     $universeExist = check_if_universe_doublon($data['name']);
+
+    if(owns_this_universe($userToken['id'], $id) === false)
+    {
+        echo "L'univers que vous souhaitez modifier ne vous appartient pas !";
+        exit;
+    }
 
     if($universeExist) {
         echo "L'univers ".$data['name']." existe déjà !";
@@ -536,6 +538,30 @@ function updateUniverse($id, $data, $headers) {
     $response = array('status' => 'success', 'message' => 'L\'univers a été mis à jour avec succès.');
     echo json_encode($response); 
 }
+
+function owns_this_universe($userID, $universeID/*, $headers*/) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+
+    $query = "SELECT creator_id FROM universes WHERE `id` = :universeID";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':universeID', $universeID);
+    $stmt->execute();
+
+    $universe = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'univers
+
+    //var_dump($universe);
+    if($universe['creator_id'] != $userID){
+        return false;
+    }
+    else{
+        return true;
+    }
+}
+
+
 
 
 /* Utile si on utilise PATCH
