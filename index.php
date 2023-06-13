@@ -406,7 +406,10 @@ function getOneUniverse($id) {
 
     // Récupération des données
     $universe = $stmt->fetch(PDO::FETCH_ASSOC);
-    return json_encode($universe);
+    if($universe === false)
+        echo "Cet univers n'existe pas !";
+    else
+        return json_encode($universe);
 }
 
 function getAllUniverses() {
@@ -561,16 +564,16 @@ function updateUniverse($id, $data, $headers) {
     echo json_encode($response); 
 }
 
-function deleteUniverse($id, $headers) {
+function deleteUniverse($universeID, $headers) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
     $auth = new Authentication();
 
-    $query = "DELETE FROM unviverses WHERE id = :id";
+    $query = "DELETE FROM universes WHERE id = :id";
 
     $stmt = $conn->prepare($query);
-    $stmt->bindParam(':id', $id);
+    $stmt->bindParam(':id', $universeID);
 
 
     $token = $headers['authorization'];
@@ -579,13 +582,13 @@ function deleteUniverse($id, $headers) {
     $userToken = $auth->decodeToken($token[1]);
     $userToken = json_decode($userToken->data, true);
 
-    if(check_if_universe_exist($id) === false)
+    if(check_if_universe_exist($universeID) === false)
     {
         echo "L'univers que vous souhaitez supprimer n'existe pas !";
         exit;
     }
 
-    if($userToken['id'] == $id)  
+    if(owns_this_universe($userToken['id'], $universeID))  
     {
         $stmt->execute();
         echo "Univers supprimé avec succès !";
