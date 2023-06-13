@@ -11,8 +11,6 @@
     require 'auth/user_auth.php';
     include('models/user.model.php');
 
-    require 'vendor/autoload.php';
-
 
     //phpinfo();
     /*echo date_default_timezone_get();
@@ -49,7 +47,7 @@
     echo "<br><br>";
     $testMail2 = check_if_mail_already_used('a');
     if($testMail2 == false)
-        echo "Cet email n'est pas utilisé !";
+        echo "Cet email n'est pas utilisé !<hr><br><br>";
 
 
     function check_if_mail_already_used($email){
@@ -75,3 +73,27 @@
         }
         
     }
+
+    function owns_this_universe($creatorID, $universeID/*, $headers*/) {
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
+    
+        $auth = new Authentication();
+    
+        /*$token = $headers['authorization'];
+        $token = explode(" ", $token);
+    
+        $userToken = $auth->decodeToken($token[1]);
+        $userToken = json_decode($userToken->data, true);*/
+    
+        $query = "SELECT creator_id FROM universes WHERE `id` = :universeID";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':universeID', $universeID);
+        $stmt->execute();
+    
+        $universe = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+    
+        var_dump($universe);
+    }
+
+    Owns_this_universe(1,1);
