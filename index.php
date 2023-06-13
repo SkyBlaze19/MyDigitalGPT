@@ -398,7 +398,7 @@ function getOneUniverse($id) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = "SELECT `name`, creator_id, , created_at, updated_at FROM universes WHERE id='".$id."' LIMIT 1";
+    $query = "SELECT `name`, creator_id, created_at, updated_at FROM universes WHERE id='".$id."' LIMIT 1";
     
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
@@ -493,6 +493,29 @@ function check_if_universe_doublon($name){
     }
 }
 
+function check_if_universe_exist($id){
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT `name` FROM universes WHERE `id` = :id";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':id', $id);
+    $stmt->execute();
+
+    $universe = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+    if ($universe) {
+        // Un univers possède cet id
+        // Faites quelque chose avec les données de l'utilisateur
+        return true;
+        // Faites ce que vous devez faire avec l'utilisateur trouvé
+    } else {
+        // Aucun univers avec cet id
+        // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+        return false;
+    }
+}
+
 function updateUniverse($id, $data, $headers) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
@@ -519,18 +542,17 @@ function updateUniverse($id, $data, $headers) {
 
     //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
     $universeExist = check_if_universe_doublon($data['name']);
-
-    if(owns_this_universe($userToken['id'], $id) === false)
-    {
-        echo "L'univers que vous souhaitez modifier ne vous appartient pas !";
-        exit;
-    }
-
+    
     if($universeExist) {
         echo "L'univers ".$data['name']." existe déjà !";
         exit;
     }
-    else 
+    else if(owns_this_universe($userToken['id'], $id) === false)
+    {
+        echo "L'univers que vous souhaitez modifier ne vous appartient pas !";
+        exit;
+    }
+    else
         $stmt->execute();
     
     
@@ -538,6 +560,42 @@ function updateUniverse($id, $data, $headers) {
     $response = array('status' => 'success', 'message' => 'L\'univers a été mis à jour avec succès.');
     echo json_encode($response); 
 }
+
+function deleteUniverse($id, $headers) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+
+    $query = "DELETE FROM unviverses WHERE id = :id";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':id', $id);
+
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    if(check_if_universe_exist($id) === false)
+    {
+        echo "L'univers que vous souhaitez supprimer n'existe pas !";
+        exit;
+    }
+
+    if($userToken['id'] == $id)  
+    {
+        $stmt->execute();
+        echo "Univers supprimé avec succès !";
+    }
+    else {
+        echo "Vous n'avez pas la permission de supprimer cet univers";
+        exit;
+    }
+}
+
 
 function owns_this_universe($userID, $universeID/*, $headers*/) {
     $database = Database::getInstance();
