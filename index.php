@@ -413,7 +413,7 @@ function getAllUniverses() {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = 'SELECT `name`, creator_id, , created_at, updated_at FROM universes';
+    $query = 'SELECT `name`, creator_id, created_at, updated_at FROM universes';
 
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
