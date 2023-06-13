@@ -52,26 +52,26 @@
         echo "Cet email n'est pas utilisé !";
 
 
-        function check_if_mail_already_used($email){
-            $database = Database::getInstance();
-            $conn = $database->getConnection();
+    function check_if_mail_already_used($email){
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
         
-            $query = "SELECT email FROM users WHERE email = :email";
-            $stmt = $conn->prepare($query);
-            $stmt->bindParam(':email', $email);
-            $stmt->execute();
+        $query = "SELECT email FROM users WHERE email = :email";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
         
-            $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+        $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
         
-            if ($user) {
-                // Un user possède cet email
-                // Faites quelque chose avec les données de l'utilisateur
-                return true;
-                // Faites ce que vous devez faire avec l'utilisateur trouvé
-            } else {
-                // Aucun utilisateur trouvé avec cet email
-                // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
-                return false;
-            }
-        
+        if ($user) {
+            // Un user possède cet email
+            // Faites quelque chose avec les données de l'utilisateur
+            return true;
+            // Faites ce que vous devez faire avec l'utilisateur trouvé
+        } else {
+            // Aucun utilisateur trouvé avec cet email
+            // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+            return false;
         }
+        
+    }
