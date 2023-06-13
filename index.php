@@ -479,9 +479,9 @@ function check_if_universe_doublon($name){
     $stmt->bindParam(':name', $name);
     $stmt->execute();
 
-    $user = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+    $universe = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
 
-    if ($user) {
+    if ($universe) {
         // Un univers possède ce nom
         // Faites quelque chose avec les données de l'utilisateur
         return true;
@@ -491,6 +491,50 @@ function check_if_universe_doublon($name){
         // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
         return false;
     }
+}
+
+function updateUniverse($id, $data, $headers) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+
+    $query = "UPDATE users SET username = :user, `password` = :pass, email = :mail, firstname = :Fname, lastname = :Lname, updated_at = :UpdateDate 
+    WHERE id = :id";
+    
+    $query = "UPDATE universes SET `name` = :name, creatorId = :creatorId, updated_at = :UpdateDate WHERE id = :id";
+
+    $stmt = $conn->prepare($query);
+
+    //Créa de la date actuelle pour insertion en bdd
+    $updateDate = date('Y-m-d H:i:s');
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    $stmt->bindParam(':name', $data['name']);
+    $stmt->bindParam(':creatorId', $userToken['id']);
+    $stmt->bindParam(':UpdateDate', $updateDate);
+    $stmt->bindParam(':id', $id);
+
+
+    //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
+    $universeExist = check_if_universe_doublon($data['name']);
+
+    if($universeExist) {
+        echo "L'univers ".$data['name']." existe déjà !";
+        exit;
+    }
+    else 
+        $stmt->execute();
+    
+    
+    // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
+    $response = array('status' => 'success', 'message' => 'L\'univers a été mis à jour avec succès.');
+    echo json_encode($response); 
 }
 
 
