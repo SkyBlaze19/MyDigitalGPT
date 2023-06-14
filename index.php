@@ -81,7 +81,7 @@ switch($argv[0]){
     //.....
 }
 
-
+//Users
 function processUsers($method, $data, $headers, $argv){
     switch ($method){
         case 'GET':
@@ -363,10 +363,14 @@ function check_if_user_already_exist($username){
     }
 }
 
+//Universe
 function processUniverses($method, $data, $headers, $argv) {
     switch ($method){
         case 'GET':
-            handle_GET_universes($argv);
+            if(count($argv) > 2)
+                handle_GET_characters($argv);
+            else
+                handle_GET_universes($argv);
         break;
 
         case 'POST':
@@ -620,6 +624,54 @@ function owns_this_universe($userID, $universeID/*, $headers*/) {
     else{
         return true;
     }
+}
+
+
+//Characters
+function handle_GET_characters($argv) {
+    if ( isset($argv[3]) && $argv[3] != '' && is_numeric($argv[3]) )
+        echo $monCharacter = getOneCharacter($argv[3]);
+    else
+        echo $mesCharacters = getAllCharacters();
+        /*$mesUsers = getAllUsers();
+        echo $mesUsers;
+        */
+}
+
+function getOneCharacter($id) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at FROM `character` WHERE id='".$id."' LIMIT 1";
+    
+    // Exécution de la requête SQL
+    $stmt = $conn->prepare($query);
+    $stmt->execute();
+
+    // Récupération des données
+    $character = $stmt->fetch(PDO::FETCH_ASSOC);
+    if($character === false)
+        echo "Ce personnage n'existe pas !";
+    else
+        return json_encode($character);
+}
+
+function getAllCharacters() {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = 'SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at FROM `character`';
+
+    // Exécution de la requête SQL
+    $stmt = $conn->prepare($query);
+    $stmt->execute();
+
+    // Récupération des données
+    $characters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if($characters == false)
+        echo "Aucun personnage crée !";
+    else
+        return json_encode($characters);
 }
 
 
