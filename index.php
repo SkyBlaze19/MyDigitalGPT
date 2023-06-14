@@ -374,15 +374,42 @@ function processUniverses($method, $data, $headers, $argv) {
         break;
 
         case 'POST':
-            postNewUniverse($data, $headers);
+            if(count($argv) > 2 && $argv[1] != '' && is_numeric($argv[1]))
+                postNewCharacter($data, $headers, $argv[1]);
+            else
+                postNewUniverse($data, $headers);
         break;
         
         case 'PUT':
-            updateUniverse($argv[1], $data, $headers);
+            if(count($argv) > 2 && $argv[1] != '' && is_numeric($argv[1]) && is_numeric($argv[3]))
+                updateCharacter($argv[1], $data, $headers, $argv[3]);
+            else if (count($argv) <= 2 && $argv[1] != '' && is_numeric($argv[1]))
+                updateUniverse($argv[1], $data, $headers);
+            else if (count($argv) > 2 && $argv[1] != '' && $argv[3] != '')
+            {
+                if(is_numeric($argv[1]))
+                    echo "L'identifiant du personnage est incorrect, un chiffre est attendu.";
+                else if (is_numeric($argv[3]))
+                    echo "L'identifiant de l'univers est incorrect, un chiffre est attendu."; //Message de débug
+                else 
+                    echo "L'identifiant de l'univers et du personnage sont incorrect, des chiffres sont attendus."; //Message de débug       
+            }
         break;
 
         case 'DELETE':
-            deleteUniverse($argv[1], $headers);
+            if (count($argv) > 2 && $argv[1] != '' && is_numeric($argv[1]) && is_numeric($argv[3])) //Si la route contient plus de 2 elements, si le 2 n'est pas vide et est un chiffre, et si le 4 ème l'est aussi
+                deleteCharacter($argv[1], $headers, $argv[3]);
+            else if (count($argv) <= 2 && $argv[1] != '' && is_numeric($argv[1])) // Si la route contient 2 éléments ou moins et que le 2ème n'est pas vide et est un chiffre
+                deleteUniverse($argv[1], $headers);
+                else if (count($argv) > 2 && $argv[1] != '' && $argv[3] != '')
+                {
+                    if(is_numeric($argv[1]))
+                        echo "L'identifiant du personnage est incorrect, un chiffre est attendu.";
+                    else if (is_numeric($argv[3]))
+                        echo "L'identifiant de l'univers est incorrect, un chiffre est attendu."; //Message de débug
+                    else 
+                        echo "L'identifiant de l'univers et du personnage sont incorrect, des chiffres sont attendus."; //Message de débug       
+                }
         break;
 
     }
@@ -672,6 +699,144 @@ function getAllCharacters() {
         echo "Aucun personnage crée !";
     else
         return json_encode($characters);
+}
+
+function postNewCharacter($data, $headers, $univID) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+    
+    $query = "INSERT INTO `character` (`name`, `description`, universe_id, creator_id, created_at, updated_at)
+    VALUES (:name, :desc, :univID, :creatorId, :CreateDate, :UpdateDate)";
+
+    $stmt = $conn->prepare($query);
+
+    //Créa de la date actuelle pour insertion en bdd
+    $currentDate = date('Y-m-d H:i:s');
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    $stmt->bindParam(':name', $data['name']);
+    $stmt->bindParam(':desc', $data['description']);
+    $stmt->bindParam(':univID', $univID);
+    $stmt->bindParam(':creatorId', $userToken['id']);
+    $stmt->bindParam(':CreateDate', $currentDate);
+    $stmt->bindParam(':UpdateDate', $currentDate);
+
+
+    //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
+    $characterExist = check_if_character_doublon($data['name']);
+    $isYourUniverse = owns_this_universe($userToken['id'] ,$univID);
+
+    if($characterExist) {
+        echo "Le personnage ".$data['name']." existe déjà !";
+        exit;
+    }
+    if($isYourUniverse != true){
+        echo "Ce n'est pas votre univers, vous ne pouvez pas y créer de personnages.";
+        exit;
+    }
+    else 
+        $stmt->execute();
+    
+    
+    // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
+    $response = array('status' => 'success', 'message' => 'Le personnage a été crée avec succès');
+    echo json_encode($response); 
+}
+
+function check_if_character_doublon($name){
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT `name` FROM `character` WHERE `name` = :name";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':name', $name);
+    $stmt->execute();
+
+    $character = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+    if ($character) {
+        // Un personnage possède ce nom
+        // Faites quelque chose avec les données de l'utilisateur
+        return true;
+        // Faites ce que vous devez faire avec l'utilisateur trouvé
+    } else {
+        // Aucun personnage avec ce nom
+        // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+        return false;
+    }
+}
+
+function updateCharacter($universeID, $data, $headers, $characterID) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+    
+    $query = "UPDATE `character` SET `description` = :desc, updated_at = :UpdateDate WHERE id = :id";
+
+    $stmt = $conn->prepare($query);
+
+    //Créa de la date actuelle pour insertion en bdd
+    $updateDate = date('Y-m-d H:i:s');
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    $stmt->bindParam(':desc', $data['description']);
+    $stmt->bindParam(':UpdateDate', $updateDate);
+    $stmt->bindParam(':id', $characterID);
+
+
+    //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
+    if(owns_this_universe($userToken['id'], $universeID) === false)
+    {
+        echo "Le personnage que vous souhaitez modifier ne vous appartient pas !";
+        exit;
+    }
+    else
+        $stmt->execute();
+    
+    
+    // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
+    $response = array('status' => 'success', 'message' => 'Le personnage a été mis à jour avec succès.');
+    echo json_encode($response); 
+}
+
+function deleteCharacter($universeID, $headers, $characterID) {
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $auth = new Authentication();
+
+    $query = "DELETE FROM `character` WHERE id = :id";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':id', $characterID);
+
+
+    $token = $headers['authorization'];
+    $token = explode(" ", $token);
+
+    $userToken = $auth->decodeToken($token[1]);
+    $userToken = json_decode($userToken->data, true);
+
+    if(owns_this_universe($userToken['id'], $universeID) === false)
+    {
+        echo "Le personnage que vous souhaitez supprimer ne vous appartient pas !";
+        exit;
+    }
+    else
+        $stmt->execute();
 }
 
 
