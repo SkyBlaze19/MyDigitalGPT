@@ -527,13 +527,13 @@ function check_if_universe_doublon($name){
     }
 }
 
-function check_if_universe_exist($id){
+function check_if_universe_exist($universeId){
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
     $query = "SELECT `name` FROM universes WHERE `id` = :id";
     $stmt = $conn->prepare($query);
-    $stmt->bindParam(':id', $id);
+    $stmt->bindParam(':id', $universeId);
     $stmt->execute();
 
     $universe = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
@@ -657,46 +657,53 @@ function owns_this_universe($userID, $universeID/*, $headers*/) {
 //Characters
 function handle_GET_characters($argv) {
     if ( isset($argv[3]) && $argv[3] != '' && is_numeric($argv[3]) )
-        echo $monCharacter = getOneCharacter($argv[3]);
+        echo $monCharacter = getOneCharacter($argv[3], $argv[1]);
     else
-        echo $mesCharacters = getAllCharacters();
+        echo $mesCharacters = getAllCharacters($argv[1]);
         /*$mesUsers = getAllUsers();
         echo $mesUsers;
         */
 }
 
-function getOneCharacter($id) {
+function getOneCharacter($id, $universeID) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = "SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at FROM `character` WHERE id='".$id."' LIMIT 1";
-    
+    $query = "SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at FROM `character` WHERE id= :id AND universe_id= :univID LIMIT 1";
+    $composedID = $universeID.'-'.$id;
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
+    $stmt->bindParam(':univID', $universeID);
+    $stmt->bindParam(':id', $composedID);
     $stmt->execute();
 
     // Récupération des données
     $character = $stmt->fetch(PDO::FETCH_ASSOC);
     if($character === false)
         echo "Ce personnage n'existe pas !";
+    else if (check_if_universe_exist($universeID) === false)
+        echo "L'univers n'existe pas.";
     else
         return json_encode($character);
 }
 
-function getAllCharacters() {
+function getAllCharacters($universeID) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = 'SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at FROM `character`';
+    $query = 'SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at FROM `character` WHERE universe_id = :univID';
 
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
+    $stmt->bindParam(':univID', $universeID);
     $stmt->execute();
 
     // Récupération des données
     $characters = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if($characters == false)
         echo "Aucun personnage crée !";
+    else if (check_if_universe_exist($universeID) === false)
+        echo "L'univers n'existe pas.";
     else
         return json_encode($characters);
 }
@@ -707,8 +714,9 @@ function postNewCharacter($data, $headers, $univID) {
 
     $auth = new Authentication();
     
-    $query = "INSERT INTO `character` (`name`, `description`, universe_id, creator_id, created_at, updated_at)
-    VALUES (:name, :desc, :univID, :creatorId, :CreateDate, :UpdateDate)";
+
+    $query = "INSERT INTO `character` (`id`, `name`, `description`, universe_id, creator_id, created_at, updated_at)
+    VALUES (:id, :name, :desc, :univID, :creatorId, :CreateDate, :UpdateDate)";
 
     $stmt = $conn->prepare($query);
 
@@ -721,13 +729,29 @@ function postNewCharacter($data, $headers, $univID) {
     $userToken = $auth->decodeToken($token[1]);
     $userToken = json_decode($userToken->data, true);
 
+    
     $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':desc', $data['description']);
     $stmt->bindParam(':univID', $univID);
     $stmt->bindParam(':creatorId', $userToken['id']);
     $stmt->bindParam(':CreateDate', $currentDate);
     $stmt->bindParam(':UpdateDate', $currentDate);
+    
+    $lastCharacterID_query = 'SELECT id FROM  `character` WHERE universe_id = :univID ORDER BY created_at DESC LIMIT 1';    
+    $stmtID = $conn->prepare($lastCharacterID_query);
+    $stmtID->bindParam(':univID', $univID);
+    $stmtID->execute();
+    $lastCharacterID = $stmtID->fetch(PDO::FETCH_ASSOC);
 
+    $lastCharacterID = explode("-", $lastCharacterID['id']);
+    //var_dump($lastCharacterID);
+    $lastCharacterID = (int)$lastCharacterID[1];
+    $lastCharacterID += 1;
+
+
+
+    $newID = $univID."-".$lastCharacterID;
+    $stmt->bindParam(':id', $newID);
 
     //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
     $characterExist = check_if_character_doublon($data['name']);
@@ -779,12 +803,13 @@ function updateCharacter($universeID, $data, $headers, $characterID) {
 
     $auth = new Authentication();
     
-    $query = "UPDATE `character` SET `description` = :desc, updated_at = :UpdateDate WHERE id = :id";
+    $query = "UPDATE `character` SET `name` = :name, `description` = :desc, updated_at = :UpdateDate WHERE id = :id";
 
     $stmt = $conn->prepare($query);
 
     //Créa de la date actuelle pour insertion en bdd
     $updateDate = date('Y-m-d H:i:s');
+    $composedID = $universeID.'-'.$characterID;
 
     $token = $headers['authorization'];
     $token = explode(" ", $token);
@@ -792,15 +817,26 @@ function updateCharacter($universeID, $data, $headers, $characterID) {
     $userToken = $auth->decodeToken($token[1]);
     $userToken = json_decode($userToken->data, true);
 
+    $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':desc', $data['description']);
     $stmt->bindParam(':UpdateDate', $updateDate);
-    $stmt->bindParam(':id', $characterID);
+    $stmt->bindParam(':id', $composedID);
 
 
     //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
     if(owns_this_universe($userToken['id'], $universeID) === false)
     {
         echo "Le personnage que vous souhaitez modifier ne vous appartient pas !";
+        exit;
+    }
+    else if (check_if_character_exist($composedID) === false)
+    {
+        echo "Le personnage que vous souhaitez mettre à jour n'existe pas !";
+        exit;
+    }
+    else if (check_if_character_doublon($data['name']))
+    {
+        echo "Le personnage ".$data['name']." existe déjà.";
         exit;
     }
     else
@@ -839,6 +875,28 @@ function deleteCharacter($universeID, $headers, $characterID) {
         $stmt->execute();
 }
 
+function check_if_character_exist($id){
+    $database = Database::getInstance();
+    $conn = $database->getConnection();
+
+    $query = "SELECT `id` FROM `character` WHERE `id` = :id";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':id', $id);
+    $stmt->execute();
+
+    $character = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+    if ($character) {
+        // Un personnage possède cet id
+        // Faites quelque chose avec les données de l'utilisateur
+        return true;
+        // Faites ce que vous devez faire avec l'utilisateur trouvé
+    } else {
+        // Aucun personnage avec cet id
+        // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+        return false;
+    }
+}
 
 
 
