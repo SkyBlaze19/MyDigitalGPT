@@ -669,7 +669,7 @@ function getOneCharacter($id, $universeID) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = "SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at, order_in_universe FROM `character` WHERE id= :id AND universe_id= :univID LIMIT 1";
+    $query = "SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at, number_in_universe FROM `character` WHERE id= :id AND universe_id= :univID LIMIT 1";
     $composedID = $universeID.'-'.$id;
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
@@ -691,7 +691,7 @@ function getAllCharacters($universeID) {
     $database = Database::getInstance();
     $conn = $database->getConnection();
 
-    $query = 'SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at, order_in_universe FROM `character` WHERE universe_id = :univID';
+    $query = 'SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at, number_in_universe FROM `character` WHERE universe_id = :univID';
 
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
@@ -715,8 +715,8 @@ function postNewCharacter($data, $headers, $univID) {
     $auth = new Authentication();
     
 
-    $query = "INSERT INTO `character` (`name`, `description`, universe_id, creator_id, created_at, updated_at, order_in_universe)
-    VALUES (:name, :desc, :univID, :creatorId, :CreateDate, :UpdateDate, :orderInUniverse)";
+    $query = "INSERT INTO `character` (`name`, `description`, universe_id, creator_id, created_at, updated_at, number_in_universe)
+    VALUES (:name, :desc, :univID, :creatorId, :CreateDate, :UpdateDate, :numberInUniverse)";
 
     $stmt = $conn->prepare($query);
 
@@ -737,8 +737,8 @@ function postNewCharacter($data, $headers, $univID) {
     $nbPerso = $stmtNbPerso->fetch(PDO::FETCH_ASSOC);
 
     //Débug var_dump($nbPerso);
-    $newPerso = $nbPerso['nb_perso'] + 1;
-    //Débug var_dump($newPerso);
+    $newPersoNumber = $nbPerso['nb_perso'] + 1;
+    //Débug var_dump($newPersoNumber);
     
     $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':desc', $data['description']);
@@ -746,7 +746,7 @@ function postNewCharacter($data, $headers, $univID) {
     $stmt->bindParam(':creatorId', $userToken['id']);
     $stmt->bindParam(':CreateDate', $currentDate);
     $stmt->bindParam(':UpdateDate', $currentDate);
-    $stmt->bindParam(':orderInUniverse', $newPerso);
+    $stmt->bindParam(':numberInUniverse', $newPersoNumber);
 
 
     //Faire un test pour voir si l'univers est déjà existant, si c'est le cas -> message d'erreur
@@ -869,7 +869,28 @@ function deleteCharacter($universeID, $headers, $characterID) {
         exit;
     }
     else
+        // Récupère le numéro du personnage que l'on va supprimer
+        $numDuPersoSupp_query = "SELECT number_in_universe FROM `character` WHERE universe_id = $universeID AND id = $characterID";
+        $stmtNumPerso = $conn->prepare($numDuPersoSupp_query);
+        $stmtNumPerso->execute();
+
+        $numPersoSuppResult = $stmtNumPerso->fetch(PDO::FETCH_ASSOC);
+        var_dump($numPersoSuppResult);
+        $numPersoSupp = $numPersoSuppResult['number_in_universe'];
+
+
         $stmt->execute();
+
+        
+        $updateOtherCharacterQuery = "
+            UPDATE `character` SET `number_in_universe` = `number_in_universe` - 1 WHERE universe_id = $universeID AND `number_in_universe` > $numPersoSupp
+        ";
+        $stmtUpdateOthers = $conn->prepare($updateOtherCharacterQuery);
+        $stmtUpdateOthers->execute();
+
+    // Renvoi d'une réponse pour confirmer que la suppression a été effectuée avec succès
+    $response = array('status' => 'success', 'message' => 'Le personnage a été supprimé avec succès.');
+    echo json_encode($response);
 }
 
 function check_if_character_exist($id){
