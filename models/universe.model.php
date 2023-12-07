@@ -6,7 +6,7 @@
         private int $id;
         private string $name;
         private int $creator_id;
-        private DateTime $created_at; //trasnformer en datetime
+        private DateTime $created_at; //transformer en datetime
         private DateTime $updated_at;
 
         public function __construct($id, $name, $creator_id, $created_at, $updated_at)
