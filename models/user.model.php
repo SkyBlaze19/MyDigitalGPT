@@ -1,6 +1,5 @@
 <?php
 
-
     class UserModel {
 
         private int $id;
@@ -41,7 +40,7 @@
             if ($user && $password == $user['password']) {
                 // Les informations d'identification sont valides
                 //print_r($user);
-                $userObj = new UserModel(
+                return new UserModel(
                     $user['id'],
                     $user['username'], 
                     $user['password'],
@@ -50,15 +49,14 @@
                     $user['created_at'],
                     $user['updated_at'],
                 );
-                return $userObj;
             } else {
                 if(UserModel::username_is_valid($username) === false)
                 {
-                    echo "Cet utilisateur est inexistant !";
+                    throw new Exception("Cet utilisateur est inexistant !");
                 }
                 else if(UserModel::password_is_valid($user['username'], $password) === false)
                 {
-                    echo "Mot de passe invalide !";
+                    throw new Exception("Mot de passe invalide !");
                 }
                 // Les informations d'identification sont incorrectes
                 return false;
@@ -250,7 +248,7 @@
             }
             else 
             {
-                //echo 'theoriquement passws ok ';
+                //echo 'theoriquement passwd ok ';
                 return true;
             }
         }
