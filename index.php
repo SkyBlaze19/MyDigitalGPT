@@ -293,6 +293,7 @@ function handle_GET_users($argv) {
         */
 }
 
+
 // Fonction qui sert à controler mon post 
 function check_if_user_doublon($username, $mail){
     if (check_if_mail_already_used($mail) && check_if_user_already_exist($username)) 
@@ -670,11 +671,10 @@ function getOneCharacter($id, $universeID) {
     $conn = $database->getConnection();
 
     $query = "SELECT `name`, `description`, universe_id, creator_id, created_at, updated_at, number_in_universe FROM `character` WHERE id= :id AND universe_id= :univID LIMIT 1";
-    $composedID = $universeID.'-'.$id;
     // Exécution de la requête SQL
     $stmt = $conn->prepare($query);
     $stmt->bindParam(':univID', $universeID);
-    $stmt->bindParam(':id', $composedID);
+    $stmt->bindParam(':id', $id);
     $stmt->execute();
 
     // Récupération des données
@@ -959,17 +959,3 @@ function connexionBDD() {
 }
 
 exit;
-
-
-
-
-
-
-
-
-
-
-
-
-
-

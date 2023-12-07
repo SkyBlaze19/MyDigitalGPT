@@ -7,7 +7,7 @@
         private string $password;
         private string $firstname;
         private string $lastname;
-        private DateTime $created_at; //trasnformer en datetime
+        private DateTime $created_at; //transformer en datetime
         private DateTime $updated_at;
 
         public function __construct($id, $username, $password, $firstname, $lastname, $created_at, $updated_at)
@@ -87,7 +87,7 @@
 
         /**
          * Get the value of id
-         */ 
+        */ 
         public function getId()
         {
                 return $this->id;
@@ -97,7 +97,7 @@
          * Set the value of id
          *
          * @return  self
-         */ 
+        */ 
         public function setId($id)
         {
                 $this->id = $id;
@@ -107,7 +107,7 @@
 
         /**
          * Get the value of username
-         */ 
+        */ 
         public function getUsername()
         {
                 return $this->username;
@@ -117,7 +117,7 @@
          * Set the value of username
          *
          * @return  self
-         */ 
+        */ 
         public function setUsername($username)
         {
                 $this->username = $username;
@@ -127,7 +127,7 @@
 
         /**
          * Get the value of password
-         */ 
+        */ 
         public function getPassword()
         {
                 return $this->password;
@@ -137,7 +137,7 @@
          * Set the value of password
          *
          * @return  self
-         */ 
+        */ 
         public function setPassword($password)
         {
                 $this->password = $password;
@@ -147,7 +147,7 @@
 
         /**
          * Get the value of firstname
-         */ 
+        */ 
         public function getFirstname()
         {
                 return $this->firstname;
@@ -157,7 +157,7 @@
          * Set the value of firstname
          *
          * @return  self
-         */ 
+        */ 
         public function setFirstname($firstname)
         {
                 $this->firstname = $firstname;
@@ -167,7 +167,7 @@
 
         /**
          * Get the value of lastname
-         */ 
+        */ 
         public function getLastname()
         {
                 return $this->lastname;
@@ -177,7 +177,7 @@
          * Set the value of lastname
          *
          * @return  self
-         */ 
+        */ 
         public function setLastname($lastname)
         {
                 $this->lastname = $lastname;
@@ -187,7 +187,7 @@
 
         /**
          * Get the value of created_at
-         */ 
+        */ 
         public function getCreatedAt()
         {
                 return $this->created_at;
@@ -197,7 +197,7 @@
          * Set the value of created_at
          *
          * @return  self
-         */ 
+        */ 
         public function setCreatedAt($created_at)
         {
                 $this->created_at = DateTime::createFromFormat('Y-m-d H:i:s', $created_at);
@@ -206,7 +206,7 @@
 
         /**
          * Get the value of updated_at
-         */ 
+        */ 
         public function getUpdatedAt()
         {
                 return $this->updated_at;
@@ -216,7 +216,7 @@
          * Set the value of updated_at
          *
          * @return  self
-         */ 
+        */ 
         public function setUpdatedAt($updated_at)
         {
             $this->updated_at = DateTime::createFromFormat('Y-m-d H:i:s', $updated_at);
