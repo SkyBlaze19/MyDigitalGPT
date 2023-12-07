@@ -10,9 +10,9 @@
         private int $creator_id;
         private DateTime $created_at; //transformer en datetime
         private DateTime $updated_at;
-        private int $order_in_universe;
+        private int $number_in_universe;
 
-        public function __construct($id, $name, $description, $universe_id, $creator_id, $created_at, $updated_at, $order_in_universe)
+        public function __construct($id, $name, $description, $universe_id, $creator_id, $created_at, $updated_at, $number_in_universe)
         {
             $this->setId($id);
             $this->setName($name);
@@ -21,7 +21,7 @@
             $this->setCreatorId($creator_id);
             $this->setCreatedAt($created_at);
             $this->setUpdatedAt($updated_at);
-            $this->setOrder_in_universe($order_in_universe);
+            $this->setNumber_in_universe($number_in_universe);
         }
 
         /* Inutile je pense pour le moment
@@ -183,21 +183,21 @@
         }
 
         /**
-         * Get the value of order_in_universe
+         * Get the value of number_in_universe
          */ 
-        public function getOrder_in_universe()
+        public function getNumber_in_universe()
         {
-                return $this->order_in_universe;
+                return $this->number_in_universe;
         }
 
         /**
-         * Set the value of order_in_universe
+         * Set the value of number_in_universe
          *
          * @return  self
          */ 
-        public function setOrder_in_universe($order_in_universe)
+        public function setNumber_in_universe($number_in_universe)
         {
-                $this->order_in_universe = $order_in_universe;
+                $this->number_in_universe = $number_in_universe;
 
                 return $this;
         }
