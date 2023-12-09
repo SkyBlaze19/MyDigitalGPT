@@ -5,13 +5,15 @@
 include('vendor/autoload.php');
 
 include('controllers/user.controller.php');
-include('models/ConnexionBdd.php');
+require_once('models/ConnexionBdd.php');
 
 include('auth/login.php');
 
 require 'auth/config.php';
 require 'auth/user_auth.php';
+
 include('models/user.model.php');
+require_once('models/conversation.model.php');
 
 require 'vendor/autoload.php';
 
@@ -928,6 +930,28 @@ switch($argv[0]){
 
 
 
+// Conversations
+function processConversations($method, $data, $headers, $argv) {
+    switch ($method){
+        case 'GET':
+            $conversationModel = new ConversationModel(null, $data['character_id'], $data['user_id'], null, null, null);
+            $conversationModel->fetchConversations($data['character_id'], $data['user_id']);
+            break;
+
+            case 'POST':
+                postNewUser($data);
+            break;
+            
+            case 'PUT':
+                updateUser($argv[1], $data, $headers);
+            break;
+
+            case 'DELETE':
+                deleteUser($argv[1], $headers);
+            break;
+
+        }
+    }
 
 
 
