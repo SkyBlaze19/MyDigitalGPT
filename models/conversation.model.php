@@ -144,6 +144,10 @@ class ConversationModel {
         }
     }
 
+    public function fetchConversations($user_id, $character_id) {
+        return $this->getConversations($user_id, $character_id);
+    }
+
 
     
     // Méthode pour récupérer les messages d'une conversation spécifique
