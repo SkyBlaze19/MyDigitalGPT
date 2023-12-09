@@ -49,7 +49,7 @@ class ConversationModel {
         $stmt->bindParam(':UpdateDate', $currentDate);
         $stmt->bindParam(':numOfMessages', 0);
 
-        $conversationExist = checkConversationDoublon($data['conversation_name'], $userToken['id']);
+        $conversationExist = $this->checkConversationDoublon($data['conversation_name'], $userToken['id']);
 
         if($conversationExist) {
             echo "Vous avez déjà créer une conversation du nom de : ".$data['conversation_name']." !";
@@ -60,14 +60,92 @@ class ConversationModel {
         
         
         // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
-        $response = array('status' => 'success', 'message' => 'L\'univers a été inséré avec succès dans la base de données');
+        $response = array('status' => 'success', 'message' => 'La conversation a été crée avec succès !');
         echo json_encode($response); 
     }
 
+    public function createNewConversation($data, $headers) {
+        return $this->postNewConversation($data, $headers);
+    }
 
+
+    
     // - Supprimer une conversation
-    // - Obtenir la liste des conversations d'un utilisateur, etc.
+    private function deleteConversation($conversationId, $headers) {
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
+    
+        $auth = new Authentication();
+    
+        $query = "DELETE FROM conversations WHERE id = :id";
+    
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':id', $conversationId);
+    
+    
+        $token = $headers['authorization'];
+        $token = explode(" ", $token);
+    
+        $userToken = $auth->decodeToken($token[1]);
+        $userToken = json_decode($userToken->data, true);
+    
+        
+        if($this->does_conversation_exist($conversationId) === false)
+        {
+            // Théoriquement inutile car on n'aura pas la possibilité de supprimer une conversation inexistante dans l'application
+            // Fait pour s'entrainer et tester dans postman
+            echo "La conversation que vous souhaitez supprimer n'existe pas !";
+            exit;
+        }
+    
+        if($this->is_the_conversation_owner($userToken['id'], $conversationId))  
+        {
+            $stmt->execute();
+            echo "Conversation supprimé avec succès !";
+        }
+        else {
+            // Idem, comme on ne peut pas voir les conversations des autres utilisateurs, on est pas amené à pouvoir les supprimer
+            // Fait pour s'entrainer et tester dans postman
+            echo "Vous n'avez pas la permission de supprimer cette conversation";
+            exit;
+        }
+    }
 
+    public function deleteThisConversation($conversationID, $headers) {
+        return $this->deleteConversation($conversationID, $headers);
+    }
+
+
+
+    // - Obtenir la liste des conversations d'un utilisateur, etc.
+    private function getConversations($user_id, $character_id) {
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
+
+        $query = "SELECT cnv.conversation_name, c.name, cnv.number_of_messages
+                FROM `conversations` as cnv
+                LEFT JOIN `character` AS c ON cnv.character_id = c.id
+                WHERE cnv.character_id = :charID AND cnv.user_id = :userID
+        ";
+
+        $stmt = $conn->prepare($query);
+
+        $stmt->bindParam(':charID', $character_id);
+        $stmt->bindParam(':userID', $user_id);
+
+        // Gère le cas ou un utilisateur ne possède pas de conversations
+        if($this->already_have_a_conv($user_id) === false) {
+            throw new Exception("Vous n'avez pas encore créer de conversations !");
+            exit;
+        }
+        else {
+            $stmt->execute();
+            return json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    }
+
+
+    
     // Méthode pour récupérer les messages d'une conversation spécifique
     private function getMessagesInConversation($conversationId) {
         $database = Database::getInstance();
@@ -144,6 +222,85 @@ class ConversationModel {
 
     
 
+    private function check_if_conversation_exist($id){
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
+    
+        $query = "SELECT `id` FROM `conversation` WHERE `id` = :id";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+    
+        $conversation = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+    
+        if ($conversation) {
+            // Un conversation possède cet id
+            // Faites quelque chose avec les données de l'utilisateur
+            return true;
+            // Faites ce que vous devez faire avec l'utilisateur trouvé
+        } else {
+            // Aucune conversation avec cet id
+            // Faites ce que vous devez faire lorsque l'utilisateur n'est pas trouvé
+            return false;
+        }
+    }
+
+    public function does_conversation_exist($id) {
+        return $this->check_if_conversation_exist($id);
+    }
+
+
+
+    private function owns_this_conversation($userID, $conversationID/*, $headers*/) {
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
+    
+        $auth = new Authentication();
+    
+        $query = "SELECT user_id FROM conversations WHERE `id` = :conversationID";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':conversationID', $conversationID);
+        $stmt->execute();
+    
+        $conversation = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'univers
+    
+        //var_dump($universe);
+        if($conversation['user_id'] != $userID){
+            return false;
+        }
+        else{
+            return true;
+        }
+    }
+
+    public function is_the_conversation_owner($userID, $conversationID) {
+        return $this->owns_this_conversation($userID, $conversationID);
+    }
+
+
+    private function check_if_user_have_conv($user_id) {
+        $database = Database::getInstance();
+        $conn = $database->getConnection();
+
+        $query = "SELECT * FROM `conversations` as cnv WHERE cnv.user_id = :userID";
+
+        $stmt = $conn->prepare($query);
+
+        $stmt->bindParam(':userID', $user_id);
+
+        $stmt->execute();
+
+        $conv = $stmt->fetch(PDO::FETCH_ASSOC); // Récupérer les données de l'utilisateur
+
+        if ($conv)
+            return true;
+        else
+            return false;
+    }
+
+    public function already_have_a_conv($user_id) {
+        return $this->check_if_user_have_conv($user_id);
+    }
 
 
 
