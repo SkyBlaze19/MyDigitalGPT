@@ -405,7 +405,7 @@ function processUniverses($method, $data, $headers, $argv) {
                 else if (count($argv) > 2 && $argv[1] != '' && $argv[3] != '')
                 {
                     if(is_numeric($argv[1]))
-                        echo "L'identifiant du personnage est incorrect, un chiffre est attendu.";
+                        echo "L'identifiant du personnage est incorrect, un chiffre est attendu."; //Message de débug
                     else if (is_numeric($argv[3]))
                         echo "L'identifiant de l'univers est incorrect, un chiffre est attendu."; //Message de débug
                     else 
@@ -501,7 +501,7 @@ function postNewUniverse($data, $headers) {
     
     
     // Renvoi d'une réponse pour confirmer que l'insertion a été effectuée avec succès
-    $response = array('status' => 'success', 'message' => 'L\'univers a été inséré avec succès dans la base de données');
+    $response = array('status' => 'success', 'message' => 'L\'univers a été inséré avec succès !');
     echo json_encode($response); 
 }
 
